@@ -149,11 +149,14 @@ public interface Subscription {
 }
 */
     opt.subscription = function subscription(publisher, subscriber) {
+        var active = true;
         return sponsor(function subscriptionBeh(r) {
             if (r.action === 'request') {
-                publisher(r);
+                if (active) {
+                    publisher(r);
+                }
             } else if (r.action === 'cancel') {
-                this.behavior = function cancelled() {};
+                active = false;
             } else if (r.action === 'publish') {
                 subscriber(r.data);
             }
