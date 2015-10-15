@@ -37,23 +37,56 @@ var log = function () {};
 
 var rs.factory = function factory(sponsor) {
     var opt = {};
-    
+
+/*
+public interface Publisher<T> {
+    public void subscribe(Subscriber<? super T> s);
+}
+*/
     opt.publisher = function publisher() {
         var subList = [];
-        return sponsor(function publisherBeh(m) {
-            if (m.action === 'subscribe') {
-                var subscription = opt.subscription(this.self, m.subscriber);
+        return sponsor(function publisherBeh(r) {
+            if (r.action === 'subscribe') {
+                var subscription = opt.subscription(this.self, r.subscriber);
                 subList.push(subscription);
-                m.subscriber({ event:'onSubscribe', subscription:subscription });
+                r.subscriber({ event:'onSubscribe', subscription:subscription });
             }
         });
     };
-    
-    opt.subscription = function subscription(pub, sub) {
-        return sponsor(function subscriptionBeh(m) {
-            if (m.action === 'request') {
+
+/*
+public interface Subscriber<T> {
+    public void onSubscribe(Subscription s);
+    public void onNext(T t);
+    public void onError(Throwable t);
+    public void onComplete();
+}
+*/
+    opt.subscriber = function subscriber() {
+        return sponsor(function subscriberBeh(e) {
+            if (e.event === 'onSubscribe') {
                 .
-            } else if (m.action === 'cancel') {
+            } else if (e.event === 'onNext') {
+                .
+            } else if (e.event === 'onError') {
+                .
+            } else if (e.event === 'onComplete') {
+                .
+            }
+        });
+    };
+
+/*
+public interface Subscription {
+    public void request(long n);
+    public void cancel();
+}
+*/
+    opt.subscription = function subscription(pub, sub) {
+        return sponsor(function subscriptionBeh(r) {
+            if (r.action === 'request') {
+                .
+            } else if (r.action === 'cancel') {
                 .
             }
         });
