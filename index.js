@@ -38,5 +38,13 @@ var log = function () {};
 var rs.factory = function factory(sponsor) {
     var opt = {};
     
+    opt.publisher = function publisher() {
+        var subList = [];
+        return sponsor(function publisherBeh(subscriber) {
+            subList.push(subscriber);
+            subscriber({ event:'subscribed' });
+        });
+    };
+
     return opt;
 };
