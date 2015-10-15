@@ -43,15 +43,57 @@ public interface Publisher<T> {
     public void subscribe(Subscriber<? super T> s);
 }
 */
-    opt.publisher = function publisher() {
-        var subList = [];
+    opt.publisher = function publisher(producer) {
+        var request = {};
+        var requested = 0;
+        var waiting = 0;
+        var triggerProduction = function triggerProduction() {
+            if ((waiting <= 0) && (requested > 0)) {
+                producer(publishingCallback);
+            }
+        };
+        var waitForDone = sponsor(function waitBeh(subscriber) {
+            waiting -= 1;
+            triggerProduction();
+        });
+        var minimizeRequested = function minimizeRequested() {
+            for (var subscription in request) {
+                var count = request[subscription];
+                if (count < requested) {
+                    requested = count;
+                }
+            }
+        };
+        var publishingCallback = function publishingCallback(error, data) {
+            var msg = {};
+            if (error) {
+                msg.event = 'onError';
+                msg.error = error;
+            } else if (data === undefined) {
+                msg.event = 'onComplete';
+            } else {
+                msg.event = 'onNext';
+                msg.data = data;
+                msg.done = waitForDone;
+            }
+            requested -= 1;
+            for (var subscription in request) {
+                request[subscription] -= 1;
+                waiting += 1;
+                subscription({ action:'publish', data:msg });
+            }
+        };
         return sponsor(function publisherBeh(r) {
             if (r.action === 'subscribe') {
                 var publisher = this.self;
                 var subscriber = r.subscriber;
                 var subscription = opt.subscription(publisher, subscriber);
-                subList.push(subscription);
+                request[subscription] = 0;
                 subscriber({ event:'onSubscribe', subscription:subscription });
+            } else if (r.action === 'request') {
+                requested = (request[subscription] += r.count);
+                minimizeRequested();
+                triggerProduction();
             }
         });
     };
@@ -106,12 +148,14 @@ public interface Subscription {
     public void cancel();
 }
 */
-    opt.subscription = function subscription(pub, sub) {
+    opt.subscription = function subscription(publisher, subscriber) {
         return sponsor(function subscriptionBeh(r) {
             if (r.action === 'request') {
-                .
+                publisher(r);
             } else if (r.action === 'cancel') {
-                .
+                this.behavior = function cancelled() {};
+            } else if (r.action === 'publish') {
+                subscriber(r.data);
             }
         });
     };
