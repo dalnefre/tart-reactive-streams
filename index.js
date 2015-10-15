@@ -47,9 +47,11 @@ public interface Publisher<T> {
         var subList = [];
         return sponsor(function publisherBeh(r) {
             if (r.action === 'subscribe') {
-                var subscription = opt.subscription(this.self, r.subscriber);
+                var publisher = this.self;
+                var subscriber = r.subscriber;
+                var subscription = opt.subscription(publisher, subscriber);
                 subList.push(subscription);
-                r.subscriber({ event:'onSubscribe', subscription:subscription });
+                subscriber({ event:'onSubscribe', subscription:subscription });
             }
         });
     };
@@ -62,16 +64,38 @@ public interface Subscriber<T> {
     public void onComplete();
 }
 */
-    opt.subscriber = function subscriber() {
+    opt.subscriber = function subscriber(consumer, batchSize, fail) {
+        batchSize = batchSize || 1;
+        fail = fail || log;
+        var expecting = 0;
+        var subscription;
         return sponsor(function subscriberBeh(e) {
             if (e.event === 'onSubscribe') {
-                .
+                expecting = batchSize;
+                subscription = e.subscription;
+                subscription({ action:'request', count:batchSize });
             } else if (e.event === 'onNext') {
-                .
+                --expecting;
+                if (expecting >= 0) {
+                    consumer(e.data, function callback (error) {
+                        if (error) {
+                            expecting = 0;
+                            subscription({ action:'cancel' });
+                            fail(error);
+                        }
+                        e.done(this.self);
+                    });
+                } else {
+                    e.done(this.self);
+                }
+                if (expecting == 0) {
+                    subscription({ action:'request', count:batchSize });
+                }
             } else if (e.event === 'onError') {
-                .
+                fail(e.error);
+                expecting = 0;
             } else if (e.event === 'onComplete') {
-                .
+                expecting = 0;
             }
         });
     };
