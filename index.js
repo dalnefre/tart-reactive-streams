@@ -40,9 +40,22 @@ var rs.factory = function factory(sponsor) {
     
     opt.publisher = function publisher() {
         var subList = [];
-        return sponsor(function publisherBeh(subscriber) {
-            subList.push(subscriber);
-            subscriber({ event:'subscribed' });
+        return sponsor(function publisherBeh(m) {
+            if (m.action === 'subscribe') {
+                var subscription = opt.subscription(this.self, m.subscriber);
+                subList.push(subscription);
+                m.subscriber({ event:'onSubscribe', subscription:subscription });
+            }
+        });
+    };
+    
+    opt.subscription = function subscription(pub, sub) {
+        return sponsor(function subscriptionBeh(m) {
+            if (m.action === 'request') {
+                .
+            } else if (m.action === 'cancel') {
+                .
+            }
         });
     };
 
